@@ -39,6 +39,7 @@ class Student(db.Model):
     name = db.Column(db.String(255), nullable=False)
     roll_number = db.Column(db.String(50))
     seat_number = db.Column(db.String(10), nullable=False)  # Format: "A1", "B3", etc.
+    parent_email = db.Column(db.String(255), default='')
     
     # Relationships
     answers = db.relationship('StudentAnswer', backref='student', lazy=True, cascade='all, delete-orphan')

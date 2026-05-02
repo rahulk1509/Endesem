@@ -1,0 +1,8 @@
+Q1: Define Artificial Intelligence.
+A: Artificial intelligence is the field of creating machines that simulate human reasoning, learning, and decision making.
+
+Q2: What is supervised learning?
+A: Supervised learning uses labeled training data so the model can map inputs to correct outputs.
+
+Q3: Explain overfitting and underfitting.
+A: Overfitting is excessive memorization of training data, while underfitting is failure to capture the underlying relationship.

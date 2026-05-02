@@ -17,6 +17,7 @@ numpy>=1.21.0          # Numerical computing
 
 # Report Generation
 weasyprint>=59.0       # PDF generation
+reportlab>=4.0.0       # Pure-Python PDF generation for Windows compatibility
 
 # Optional: OCR Support (install if you want real image processing)
 # pytesseract>=0.3.10  # OCR engine wrapper

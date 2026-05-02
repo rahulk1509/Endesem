@@ -1,0 +1,8 @@
+Q1: What is Artificial Intelligence?
+A: Artificial Intelligence is the simulation of human intelligence in machines. It helps systems learn from data, reason over information, and solve problems in ways that feel intelligent.
+
+Q2: Explain supervised learning.
+A: Supervised learning is a method where a model learns from labeled data. For example, an email classifier can be trained with messages marked spam or not spam so it predicts future emails correctly.
+
+Q3: Differentiate overfitting and underfitting.
+A: Overfitting happens when a model learns noise too closely and performs well on training data but poorly on new data. Underfitting happens when the model is too simple to capture the real pattern.

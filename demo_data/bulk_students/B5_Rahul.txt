@@ -1,0 +1,8 @@
+Q1: What is Artificial Intelligence?
+A: Artificial intelligence refers to systems built to imitate human thinking so they can analyze data, make decisions, and solve tasks that usually need intelligence.
+
+Q2: Explain supervised learning.
+A: Supervised learning trains a model using labeled examples. For instance, a system can study photos tagged as cat or dog and learn to classify new images.
+
+Q3: Differentiate overfitting and underfitting.
+A: Overfitting means a model memorizes training details and loses accuracy on new examples, while underfitting means it has not learned enough to model the underlying relationship.

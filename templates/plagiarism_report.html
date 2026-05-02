@@ -5,6 +5,343 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plagiarism Report - AI Exam Corrector</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .proof-row td {
+            padding-top: 0;
+            border-top: none;
+        }
+
+        .proof-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 12px 0 0;
+            padding: 10px 16px;
+            border: 1px solid #F0D4E8;
+            border-radius: 999px;
+            background: #fff;
+            color: #E281B1;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+        }
+
+        .proof-toggle-btn:hover {
+            transform: translateY(-1px);
+            background: #FFF0F8;
+        }
+
+        .proof-panel {
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(-6px);
+            transition: max-height 0.4s ease, opacity 0.35s ease, transform 0.35s ease;
+            background: #FDF0F8;
+            border: 1px solid #F0D4E8;
+            border-radius: 12px;
+            padding: 0 20px;
+            margin-top: 14px;
+        }
+
+        .proof-panel.open {
+            max-height: 600px;
+            opacity: 1;
+            transform: translateY(0);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .proof-section {
+            margin-bottom: 18px;
+        }
+
+        .proof-section h3 {
+            margin: 0 0 10px;
+            color: #B84E86;
+            font-size: 1rem;
+            letter-spacing: 0.04em;
+        }
+
+        .similarity-breakdown {
+            display: grid;
+            gap: 12px;
+        }
+
+        .similarity-row {
+            display: grid;
+            grid-template-columns: 90px 1fr 48px;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .mini-bar {
+            height: 12px;
+            background: #fff;
+            border: 1px solid #F0D4E8;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .mini-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #E281B1, #F4A8C9);
+            border-radius: inherit;
+        }
+
+        .comparison-question {
+            margin-top: 16px;
+        }
+
+        .comparison-question h4 {
+            margin: 0 0 10px;
+            color: #8F3D67;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .answer-box {
+            background: #fff;
+            border: 1px solid #F0D4E8;
+            border-radius: 12px;
+            padding: 14px;
+            min-height: 120px;
+        }
+
+        .answer-label {
+            font-weight: 700;
+            color: #B84E86;
+            margin-bottom: 8px;
+        }
+
+        .answer-text {
+            white-space: pre-wrap;
+            line-height: 1.65;
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        .matching-phrase {
+            background: #E281B1;
+            color: #fff;
+            border-radius: 3px;
+            padding: 1px 4px;
+        }
+
+        .reasoning-box {
+            border-left: 4px solid #E281B1;
+            background: #FFF0F8;
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+
+        .reasoning-box p {
+            margin: 0;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        .phrase-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .phrase-badge {
+            background: #E281B1;
+            color: #fff;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.8rem;
+        }
+
+        /* EMAIL NOTIFICATION STYLES */
+        .notify-btn {
+            background: #E281B1;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: inherit;
+        }
+
+        .notify-btn:hover {
+            background: #C965A0;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(226,129,177,0.3);
+        }
+
+        .notify-btn:disabled {
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.8;
+        }
+
+        .notify-btn.sent {
+            background: #00cc88;
+        }
+
+        .notify-btn.failed {
+            background: #FF4444;
+        }
+
+        .notify-btn.demo {
+            background: #ffaa00;
+            color: #000;
+        }
+
+        .badge-sent {
+            background: #00cc88;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .badge-demo {
+            background: #ffaa00;
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .badge-no-email {
+            background: #ddd;
+            color: #555;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .badge-failed {
+            background: #FF4444;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        /* EMAIL STATUS BANNER */
+        .email-banner {
+            padding: 14px 24px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .email-banner.demo-mode {
+            background: #FFF8E1;
+            border-left: 4px solid #ffaa00;
+            color: #7a5c00;
+        }
+
+        .email-banner.active-mode {
+            background: #F0FFF8;
+            border-left: 4px solid #00cc88;
+            color: #006644;
+        }
+
+        .bulk-notify-wrap {
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .bulk-notify-btn {
+            background: #E281B1;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .bulk-notify-btn:hover {
+            background: #C965A0;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(226,129,177,0.3);
+        }
+
+        .bulk-notify-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.8;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* NOTIFICATION SUMMARY CARD */
+        .summary-card.notified {
+            border-top: 3px solid #00cc88;
+        }
+
+        .summary-card.notified .number {
+            color: #00cc88;
+        }
+
+        /* TOAST NOTIFICATION */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            z-index: 9999;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.success {
+            background: #00cc88;
+            color: white;
+        }
+
+        .toast.error {
+            background: #FF4444;
+            color: white;
+        }
+
+        .toast.warning {
+            background: #ffaa00;
+            color: #000;
+        }
+
+        @media (max-width: 900px) {
+            .comparison-grid { grid-template-columns: 1fr; }
+            .similarity-row { grid-template-columns: 80px 1fr 42px; }
+        }
+    </style>
 </head>
 <body>
     <!-- Floating Particles -->
@@ -13,6 +350,9 @@
         <span></span><span></span><span></span><span></span><span></span>
         <span></span><span></span><span></span><span></span><span></span>
     </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
 
     <!-- Navigation -->
     <nav class="navbar">
@@ -29,9 +369,22 @@
     </nav>
 
     <div class="report-container">
+
+        <!-- EMAIL STATUS BANNER -->
+        {% if not mail_configured %}
+        <div class="email-banner demo-mode">
+            ⚠️ <span><strong>Demo Mode:</strong> Email notifications are simulated only.
+            Set <code>MAIL_USERNAME</code> and <code>MAIL_PASSWORD</code> environment variables to send real emails to parents.</span>
+        </div>
+        {% else %}
+        <div class="email-banner active-mode">
+            ✅ <span><strong>Email Active:</strong> Parent notifications will be sent automatically for all HIGH RISK pairs detected.</span>
+        </div>
+        {% endif %}
+
         <!-- Report Header -->
         <div class="report-header">
-            <h1>Plagiarism Detection Report</h1>
+            <h1>◎ Plagiarism Detection Report</h1>
             <div class="report-meta">
                 <div class="meta-item">
                     <strong>Exam Name</strong>
@@ -55,66 +408,65 @@
         <!-- Summary Cards -->
         <div class="summary-cards">
             <div class="summary-card">
-                <span class="number">{{ summary.high_risk }}</span>
+                <span class="number" style="color:#FF4444;">{{ summary.high_risk }}</span>
                 <span>HIGH RISK Pairs</span>
             </div>
             <div class="summary-card">
-                <span class="number">{{ summary.low_risk }}</span>
+                <span class="number" style="color:#ffaa00;">{{ summary.low_risk }}</span>
                 <span>LOW RISK Pairs</span>
             </div>
             <div class="summary-card">
-                <span class="number">{{ summary.sample_match }}</span>
+                <span class="number" style="color:#9B8FFF;">{{ summary.sample_match }}</span>
                 <span>Sample Matches</span>
             </div>
+            <div class="summary-card notified">
+                <span class="number">{{ (summary.emails_sent | default(0)) + (summary.emails_demo | default(0)) }}</span>
+                <span>Parents Notified</span>
+            </div>
         </div>
+
+        {% if flags %}
+        <div class="bulk-notify-wrap">
+            <button class="bulk-notify-btn" id="bulk-notify-btn" onclick="sendAllHighRiskEmails()">
+                📧 Notify All High-Risk Parents
+            </button>
+        </div>
+        {% endif %}
 
         <!-- Seating Grid Visualization -->
         {% if flags %}
         <div class="seating-grid-container">
-            <h2>Seating Arrangement with Flagged Pairs</h2>
-            <div style="text-align: center;">
-                <svg class="seating-grid" width="500" height="350">
-                    <!-- Draw grid cells (6 rows x 10 columns) -->
-                    {% set seat_map = {} %}
-                    {% set high_risk_seats = {} %}
-                    {% set low_risk_seats = {} %}
-                    
-                    <!-- Build seat maps from flags -->
-                    {% for flag in flags %}
-                        {% if flag.risk == 'HIGH_RISK' %}
-                            {% set _ = high_risk_seats.update({flag.seat_a: flag.risk, flag.seat_b: flag.risk}) %}
-                        {% elif flag.risk == 'LOW_RISK' %}
-                            {% set _ = low_risk_seats.update({flag.seat_a: flag.risk, flag.seat_b: flag.risk}) %}
-                        {% endif %}
-                    {% endfor %}
-                    
+            <h2>▦ Seating Arrangement with Flagged Pairs</h2>
+            <div style="text-align: center; overflow-x: auto;">
+                <svg class="seating-grid" width="500" height="310" viewBox="0 0 500 310">
                     {% for i in range(6) %}
                         {% set row = ['A', 'B', 'C', 'D', 'E', 'F'][i] %}
                         {% for j in range(10) %}
                             {% set seat = row ~ (j + 1) %}
-                            {% set x = 30 + j * 45 %}
-                            {% set y = 30 + i * 45 %}
-                            {% set seat_map_update = seat_map.update({seat: {'x': x, 'y': y}}) %}
-                            
+                            {% set x = 10 + j * 48 %}
+                            {% set y = 10 + i * 48 %}
+
                             {% if seat in high_risk_seats %}
-                                <rect x="{{ x }}" y="{{ y }}" width="40" height="40" rx="6" 
-                                      style="fill: #E281B1; stroke: #FF4444; stroke-width: 2; box-shadow: 0 0 8px rgba(255,68,68,0.8);"
-                                      class="flagged-seat high-risk" data-seat="{{ seat }}" />
-                                <text x="{{ x + 20 }}" y="{{ y + 25 }}" text-anchor="middle" 
-                                      font-weight="700" fill="white" font-size="12">
+                                <rect x="{{ x }}" y="{{ y }}" width="42" height="42" rx="6"
+                                      fill="#E281B1" stroke="#FF4444" stroke-width="2"/>
+                                <circle cx="{{ x + 34 }}" cy="{{ y + 8 }}" r="4.5" fill="#FF4444" stroke="#fff" stroke-width="1.2"/>
+                                <text x="{{ x + 21 }}" y="{{ y + 26 }}" text-anchor="middle"
+                                      font-weight="700" fill="white" font-size="11" font-family="Space Grotesk, sans-serif">
                                     {{ seat }}
                                 </text>
                             {% elif seat in low_risk_seats %}
-                                <rect x="{{ x }}" y="{{ y }}" width="40" height="40" rx="6" 
-                                      style="fill: #ffaa00; stroke: #ff8800; stroke-width: 2;"
-                                      class="flagged-seat low-risk" data-seat="{{ seat }}" />
-                                <text x="{{ x + 20 }}" y="{{ y + 25 }}" text-anchor="middle" 
-                                      font-weight="700" fill="#000" font-size="12">
+                                <rect x="{{ x }}" y="{{ y }}" width="42" height="42" rx="6"
+                                      fill="#ffaa00" stroke="#ff8800" stroke-width="2"/>
+                                <circle cx="{{ x + 34 }}" cy="{{ y + 8 }}" r="4.5" fill="#FF4444" stroke="#fff" stroke-width="1.2"/>
+                                <text x="{{ x + 21 }}" y="{{ y + 26 }}" text-anchor="middle"
+                                      font-weight="700" fill="#000" font-size="11" font-family="Space Grotesk, sans-serif">
                                     {{ seat }}
                                 </text>
                             {% else %}
-                                <rect x="{{ x }}" y="{{ y }}" width="40" height="40" rx="6" />
-                                <text x="{{ x + 20 }}" y="{{ y + 25 }}" text-anchor="middle" font-weight="600">
+                                <rect x="{{ x }}" y="{{ y }}" width="42" height="42" rx="6"
+                                      fill="#FDF0F8" stroke="#F0D4E8" stroke-width="1"/>
+                                <text x="{{ x + 21 }}" y="{{ y + 26 }}" text-anchor="middle"
+                                      fill="#888" font-size="10" font-family="Space Grotesk, sans-serif">
                                     {{ seat }}
                                 </text>
                             {% endif %}
@@ -122,15 +474,15 @@
                     {% endfor %}
                 </svg>
             </div>
-            
+
             <div class="grid-legend">
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #E281B1; border: 2px solid #FF4444;"></div>
-                    <span>HIGH RISK (Similar + Adjacent) - {{ summary.high_risk }} pairs</span>
+                    <div class="legend-color" style="background:#E281B1; border:2px solid #FF4444;"></div>
+                    <span>HIGH RISK (Similar + Adjacent) — {{ summary.high_risk }} pairs</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background: #ffaa00; border: 2px solid #ff8800;"></div>
-                    <span>LOW RISK (Similar + Not Adjacent) - {{ summary.low_risk }} pairs</span>
+                    <div class="legend-color" style="background:#ffaa00; border:2px solid #ff8800;"></div>
+                    <span>LOW RISK (Similar + Not Adjacent) — {{ summary.low_risk }} pairs</span>
                 </div>
             </div>
         </div>
@@ -139,7 +491,7 @@
         <!-- Flagged Pairs Table -->
         <div class="flagged-pairs-container">
             <h2>Detailed Flagged Pairs</h2>
-            
+
             {% if flags %}
             <table class="risk-table">
                 <thead>
@@ -151,6 +503,7 @@
                         <th>Question</th>
                         <th>Similarity</th>
                         <th>Risk Level</th>
+                        <th>Parent Notified</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -171,10 +524,140 @@
                                 {{ flag.risk|replace('_', ' ') }}
                             </span>
                         </td>
+                        <td>
+                            {% if flag.risk == 'HIGH_RISK' %}
+                                {% set notif_a = flag.notification_a | default('no_email') %}
+                                {% if notif_a == 'sent' %}
+                                    <span class="badge-sent">✓ Sent</span>
+                                {% elif notif_a == 'demo' %}
+                                    <span class="badge-demo">◎ Demo</span>
+                                {% elif notif_a == 'failed' %}
+                                    <span class="badge-failed">✗ Failed</span>
+                                {% elif flag.parent_email_a %}
+                                    <button
+                                        class="notify-btn"
+                                        id="notify-btn-{{ loop.index }}-a"
+                                        onclick="sendEmail(
+                                            '{{ flag.student_a | e }}',
+                                            '{{ flag.seat_a | e }}',
+                                            '{{ flag.similarity }}',
+                                            '{{ flag.student_b | e }}',
+                                            '{{ exam.name | e }}',
+                                            '{{ flag.parent_email_a | e }}',
+                                            'notify-btn-{{ loop.index }}-a'
+                                        )">
+                                        📧 Notify Parent
+                                    </button>
+                                {% else %}
+                                    <span class="badge-no-email">— No Email</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge-no-email">— N/A</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <!-- PROOF ROW -->
+                    <tr class="proof-row">
+                        <td colspan="8">
+                            <button type="button"
+                                    class="proof-toggle-btn"
+                                    data-target="proof-panel-{{ loop.index }}"
+                                    aria-expanded="false">
+                                🔍 View Proof ▼
+                            </button>
+
+                            <div class="proof-panel" id="proof-panel-{{ loop.index }}">
+
+                                <!-- Similarity Breakdown -->
+                                <div class="proof-section">
+                                    <h3>SIMILARITY BREAKDOWN</h3>
+                                    <p><strong>Overall similarity:</strong> {{ flag.proof.overall_similarity }}% &nbsp;|&nbsp;
+                                       <strong>Threshold:</strong> {{ flag.proof.threshold }}% &nbsp;|&nbsp;
+                                       <strong>Seat distance:</strong> {{ flag.proof.seat_distance if flag.proof.seat_distance is not none else 'Unknown' }} seat(s)
+                                    </p>
+                                    <div class="similarity-breakdown">
+                                        {% for item in flag.proof.question_breakdown %}
+                                        <div class="similarity-row">
+                                            <span><strong>{{ item.question }}</strong></span>
+                                            <div class="mini-bar">
+                                                <div class="mini-bar-fill" style="width: {{ item.similarity }}%;"></div>
+                                            </div>
+                                            <span>{{ item.similarity }}%</span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <!-- Side by Side Comparison -->
+                                <div class="proof-section">
+                                    <h3>SIDE BY SIDE COMPARISON</h3>
+                                    {% for item in flag.proof.question_breakdown %}
+                                    <div class="comparison-question">
+                                        <h4>{{ item.question }} — {{ item.similarity }}% similar</h4>
+                                        <div class="comparison-grid">
+                                            <div class="answer-box">
+                                                <div class="answer-label">{{ flag.student_a }}</div>
+                                                <div class="answer-text">{{ item.answer_a_html | safe }}</div>
+                                            </div>
+                                            <div class="answer-box">
+                                                <div class="answer-label">{{ flag.student_b }}</div>
+                                                <div class="answer-text">{{ item.answer_b_html | safe }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                <!-- Why Flagged -->
+                                <div class="proof-section reasoning-box">
+                                    <h3>⚠ WHY FLAGGED</h3>
+                                    <p>{{ flag.proof.reasoning }}</p>
+                                </div>
+
+                                <!-- Matching Phrases -->
+                                {% if flag.proof.matched_phrases %}
+                                <div class="proof-section">
+                                    <h3>MATCHING PHRASES DETECTED</h3>
+                                    <div class="phrase-badges">
+                                        {% for phrase in flag.proof.matched_phrases %}
+                                        <span class="phrase-badge">{{ phrase }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Send Email from inside proof panel too -->
+                                {% if flag.risk == 'HIGH_RISK' and flag.parent_email_a %}
+                                <div class="proof-section" style="border-top:1px solid #F0D4E8; padding-top:16px; margin-top:8px;">
+                                    <h3>PARENT NOTIFICATION</h3>
+                                    <p style="font-size:0.88rem; color:#888; margin-bottom:10px;">
+                                        Send an automated email alert to {{ flag.student_a }}'s parent/guardian.
+                                    </p>
+                                    <button
+                                        class="notify-btn"
+                                        id="notify-proof-btn-{{ loop.index }}"
+                                        onclick="sendEmail(
+                                            '{{ flag.student_a | e }}',
+                                            '{{ flag.seat_a | e }}',
+                                            '{{ flag.similarity }}',
+                                            '{{ flag.student_b | e }}',
+                                            '{{ exam.name | e }}',
+                                            '{{ flag.parent_email_a | e }}',
+                                            'notify-proof-btn-{{ loop.index }}'
+                                        )">
+                                        📧 Send Alert to Parent
+                                    </button>
+                                </div>
+                                {% endif %}
+
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+
             {% else %}
             <div class="no-flags">
                 <span class="emoji">✅</span>
@@ -185,57 +668,200 @@
 
         <!-- Export & Navigation -->
         <div class="export-section">
-            <a href="{{ url_for('export_plagiarism_pdf', exam_id=exam.id) }}" class="btn-export">Export as PDF</a>
+            <a href="{{ url_for('export_plagiarism_pdf', exam_id=exam.id) }}" class="btn-export">↓ Export as PDF</a>
             <a href="{{ url_for('plagiarism_home') }}" class="btn-back">← Back to Plagiarism Detection</a>
         </div>
-    </div>
 
-    <!-- Parallax & Interactive Effects -->
+    </div><!-- end report-container -->
+
     <script>
-        // Parallax scroll effects
+        const allFlags = {{ flags | tojson }};
+
+        // ===== TOAST HELPER =====
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => { toast.className = 'toast'; }, 3500);
+        }
+
+        // ===== BULK EMAIL =====
+        function sendAllHighRiskEmails() {
+            const btn = document.getElementById('bulk-notify-btn');
+            if (!btn) return;
+
+            const notifications = [];
+            const dedupe = new Set();
+
+            allFlags.forEach((flag) => {
+                if (flag.risk !== 'HIGH_RISK') return;
+                const examName = '{{ exam.name | e }}';
+                const similarity = String(flag.similarity || '');
+
+                const candidates = [
+                    {
+                        student_name: flag.student_a,
+                        seat: flag.seat_a,
+                        partner_name: flag.student_b,
+                        parent_email: flag.parent_email_a
+                    },
+                    {
+                        student_name: flag.student_b,
+                        seat: flag.seat_b,
+                        partner_name: flag.student_a,
+                        parent_email: flag.parent_email_b
+                    }
+                ];
+
+                candidates.forEach((candidate) => {
+                    const email = (candidate.parent_email || '').trim().toLowerCase();
+                    const student = (candidate.student_name || '').trim().toLowerCase();
+                    if (!email) return;
+                    const key = `${student}|${email}`;
+                    if (dedupe.has(key)) return;
+                    dedupe.add(key);
+                    notifications.push({
+                        ...candidate,
+                        similarity: similarity,
+                        exam_name: examName
+                    });
+                });
+            });
+
+            if (!notifications.length) {
+                showToast('No parent emails available for high-risk students.', 'warning');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Sending alerts...';
+
+            fetch('/plagiarism/send-bulk-emails', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ notifications })
+            })
+            .then((res) => res.json())
+            .then((data) => {
+                if (!data.success) {
+                    showToast(`❌ Failed: ${data.error || 'Unknown error'}`, 'error');
+                    btn.disabled = false;
+                    btn.textContent = '📧 Notify All High-Risk Parents';
+                    return;
+                }
+
+                const sent = data.sent || 0;
+                const demo = data.demo || 0;
+                const failed = data.failed || 0;
+                const skipped = data.skipped || 0;
+                showToast(`Done: ${sent} sent, ${demo} demo, ${failed} failed, ${skipped} skipped.`, failed ? 'warning' : 'success');
+                btn.textContent = '✓ Alerts Processed';
+            })
+            .catch((err) => {
+                console.error(err);
+                showToast('❌ Network error while sending bulk alerts.', 'error');
+                btn.disabled = false;
+                btn.textContent = '📧 Notify All High-Risk Parents';
+            });
+        }
+
+        // ===== SEND EMAIL =====
+        function sendEmail(studentName, seat, similarity, partnerName, examName, parentEmail, btnId) {
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+
+            btn.textContent = '⏳ Sending...';
+            btn.disabled = true;
+            btn.style.background = '#888';
+
+            fetch('/plagiarism/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    student_name: studentName,
+                    seat: seat,
+                    similarity: similarity,
+                    partner_name: partnerName,
+                    exam_name: examName,
+                    parent_email: parentEmail
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.message && data.message.includes('Demo')) {
+                        btn.textContent = '◎ Demo Sent';
+                        btn.className = 'notify-btn demo';
+                        showToast('Demo mode — email simulated for ' + studentName, 'warning');
+                    } else {
+                        btn.textContent = '✓ Email Sent!';
+                        btn.className = 'notify-btn sent';
+                        showToast('✅ Email sent to parent of ' + studentName, 'success');
+                    }
+                    btn.disabled = true;
+                } else {
+                    btn.textContent = '✗ Failed';
+                    btn.className = 'notify-btn failed';
+                    btn.disabled = false;
+                    showToast('❌ Failed: ' + (data.error || 'Unknown error'), 'error');
+                }
+            })
+            .catch(err => {
+                btn.textContent = '✗ Error';
+                btn.className = 'notify-btn failed';
+                btn.disabled = false;
+                showToast('❌ Network error — check console', 'error');
+                console.error(err);
+            });
+        }
+
+        // ===== PROOF TOGGLE =====
+        document.querySelectorAll('.proof-toggle-btn').forEach((button) => {
+            button.addEventListener('click', () => {
+                const panel = document.getElementById(button.dataset.target);
+                if (!panel) return;
+                const isOpen = panel.classList.toggle('open');
+                button.setAttribute('aria-expanded', String(isOpen));
+                button.textContent = isOpen ? '🔍 Hide Proof ▲' : '🔍 View Proof ▼';
+            });
+        });
+
+        // ===== PARALLAX =====
         document.addEventListener('DOMContentLoaded', () => {
-            const cards = document.querySelectorAll('.summary-card, .risk-table');
-            
+            const cards = document.querySelectorAll('.summary-card');
             window.addEventListener('scroll', () => {
                 const scrollY = window.scrollY;
-                
-                // Cards subtly shift on scroll
                 cards.forEach((card, i) => {
                     const speed = i % 2 === 0 ? 0.03 : -0.03;
                     card.style.transform = `translateY(${scrollY * speed}px)`;
                 });
-
-                // Navbar parallax shrink effect
-                const navbar = document.querySelector('nav, .navbar');
+                const navbar = document.querySelector('.navbar');
                 if (navbar) {
                     if (window.scrollY > 50) {
                         navbar.style.padding = '10px 60px';
                         navbar.style.backdropFilter = 'blur(20px)';
-                        navbar.style.background = 'rgba(15,10,10,0.95)';
+                        navbar.style.background = 'rgba(5,3,4,0.97)';
                     } else {
                         navbar.style.padding = '20px 60px';
                         navbar.style.backdropFilter = 'none';
-                        navbar.style.background = '#0f0f0f';
+                        navbar.style.background = '#050304';
                     }
                     navbar.style.transition = 'all 0.3s ease';
                 }
             });
         });
 
-        // Card tilt effect on mouse move (mouse parallax)
+        // ===== CARD TILT =====
         document.querySelectorAll('.summary-card').forEach(card => {
             card.addEventListener('mousemove', (e) => {
                 const rect = card.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                const rotateX = (y - centerY) / 20;
-                const rotateY = (centerX - x) / 20;
-                card.style.transform = 
-                    `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px)`;
+                const rotateX = (y - rect.height / 2) / 20;
+                const rotateY = (rect.width / 2 - x) / 20;
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px)`;
                 card.style.transition = 'transform 0.1s ease';
-                card.style.boxShadow = '0 20px 40px rgba(255,107,107,0.15)';
+                card.style.boxShadow = '0 20px 40px rgba(226,129,177,0.2)';
             });
             card.addEventListener('mouseleave', () => {
                 card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
@@ -244,7 +870,7 @@
             });
         });
 
-        // Scroll reveal for sections
+        // ===== SCROLL REVEAL =====
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -254,7 +880,7 @@
             });
         }, { threshold: 0.1 });
 
-        document.querySelectorAll('.summary-card, .risk-table').forEach(el => {
+        document.querySelectorAll('.summary-card, .risk-table, .seating-grid-container').forEach(el => {
             el.style.opacity = '0';
             el.style.transform = 'translateY(30px)';
             el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
