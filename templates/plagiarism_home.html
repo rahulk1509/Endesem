@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plagiarism Detection - AI Exam Corrector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <!-- Floating Particles -->
+    <div class="particles">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-left">
+                <h1 class="logo">◈ AI Exam Corrector</h1>
+            </div>
+            <div class="nav-right">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/dashboard" class="nav-link">📊 Dashboard</a>
+                <a href="/plagiarism" class="nav-link active">Plagiarism</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Plagiarism Nav -->
+    <div class="plagiarism-nav">
+        <div class="container">
+            <div style="display: flex; gap: 20px; justify-content: center; align-items: center;">
+                <a href="{{ url_for('index') }}" style="color: var(--muted); text-decoration: none; font-weight: 500;">← Back to Grading</a>
+                <span style="color: var(--muted);">|</span>
+                <span class="badge" style="background-color: var(--accent); color: #000; padding: 4px 12px; border-radius: 4px; font-weight: 700; font-size: 0.85rem;">Plagiarism Detection</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="plagiarism-container">
+        <h1>Plagiarism Detection</h1>
+        <p>Detect similar answers and potential cheating based on seating arrangements.</p>
+
+        {% if error %}
+        <div style="background: rgba(255, 68, 68, 0.1); color: var(--danger); padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 3px solid var(--danger);">
+            Error: {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Main Actions -->
+        <div class="plagiarism-cards">
+            <div class="plagiarism-card">
+                <h3>🚀 Try Demo</h3>
+                <p>See plagiarism detection in action with pre-loaded sample data.</p>
+                <a href="{{ url_for('plagiarism_demo') }}" class="btn btn-primary btn-large">Try Demo Now</a>
+            </div>
+
+            <div class="plagiarism-card">
+                <h3>📤 Upload Student Answers</h3>
+                <p>Upload up to 10 student answer sheets (PDF or TXT) at once with seating information.</p>
+                <a href="{{ url_for('upload_bulk') }}" class="btn btn-primary btn-large">Upload Bulk</a>
+            </div>
+
+            <div class="plagiarism-card">
+                <h3>📚 Upload Sample Papers</h3>
+                <p>Upload model answers for reference to filter out legitimate matches.</p>
+                <a href="{{ url_for('upload_samples') }}" class="btn btn-primary btn-large">Upload Samples</a>
+            </div>
+
+            <div class="plagiarism-card">
+                <h3>🔎 Check Plagiarism</h3>
+                <p>Run plagiarism detection on an uploaded exam and view the detailed report.</p>
+                <button class="btn btn-primary btn-large" onclick="scrollToExams()">Select Exam</button>
+            </div>
+        </div>
+
+        <!-- Recent Exams -->
+        {% if exams %}
+        <div class="exams-list">
+            <h2>Recent Exams</h2>
+            {% for exam in exams %}
+            <div class="exam-item">
+                <div class="exam-info">
+                    <h4>{{ exam.name }}</h4>
+                    <p>{{ exam.total_students }} students | {{ exam.date.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+                <div class="exam-actions">
+                    <a href="{{ url_for('check_plagiarism', exam_id=exam.id) }}" class="btn btn-primary" style="padding: 8px 15px; font-size: 0.85rem;">
+                        Check
+                    </a>
+                    <a href="{{ url_for('export_plagiarism_pdf', exam_id=exam.id) }}" class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.85rem;">
+                        Export PDF
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-exams">
+            No exams yet. Start by uploading student answer sheets.
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function scrollToExams() {
+            const examsList = document.querySelector('.exams-list');
+            if (examsList) {
+                examsList.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Parallax scroll effects
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.plagiarism-card, .exam-item');
+            
+            window.addEventListener('scroll', () => {
+                const scrollY = window.scrollY;
+                
+                // Cards subtly shift on scroll
+                cards.forEach((card, i) => {
+                    const speed = i % 2 === 0 ? 0.03 : -0.03;
+                    card.style.transform = `translateY(${scrollY * speed}px)`;
+                });
+
+                // Navbar parallax shrink effect
+                const navbar = document.querySelector('nav, .navbar');
+                if (navbar) {
+                    if (window.scrollY > 50) {
+                        navbar.style.padding = '10px 60px';
+                        navbar.style.backdropFilter = 'blur(20px)';
+                        navbar.style.background = 'rgba(15,10,10,0.95)';
+                    } else {
+                        navbar.style.padding = '20px 60px';
+                        navbar.style.backdropFilter = 'none';
+                        navbar.style.background = '#0f0f0f';
+                    }
+                    navbar.style.transition = 'all 0.3s ease';
+                }
+            });
+        });
+
+        // Card tilt effect on mouse move (mouse parallax)
+        document.querySelectorAll('.plagiarism-card, .exam-item').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = (y - centerY) / 20;
+                const rotateY = (centerX - x) / 20;
+                card.style.transform = 
+                    `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px)`;
+                card.style.transition = 'transform 0.1s ease';
+                card.style.boxShadow = '0 20px 40px rgba(255,107,107,0.15)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
+                card.style.transition = 'transform 0.5s ease';
+                card.style.boxShadow = '';
+            });
+        });
+
+        // Scroll reveal for sections
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.plagiarism-card, .exam-item').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

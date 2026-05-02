@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plagiarism Report - AI Exam Corrector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <!-- Floating Particles -->
+    <div class="particles">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-left">
+                <h1 class="logo">◈ AI Exam Corrector</h1>
+            </div>
+            <div class="nav-right">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/dashboard" class="nav-link">📊 Dashboard</a>
+                <a href="/plagiarism" class="nav-link active">Plagiarism</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="report-container">
+        <!-- Report Header -->
+        <div class="report-header">
+            <h1>Plagiarism Detection Report</h1>
+            <div class="report-meta">
+                <div class="meta-item">
+                    <strong>Exam Name</strong>
+                    <span>{{ exam.name }}</span>
+                </div>
+                <div class="meta-item">
+                    <strong>Total Students</strong>
+                    <span>{{ summary.total_students }}</span>
+                </div>
+                <div class="meta-item">
+                    <strong>Date</strong>
+                    <span>{{ exam.date.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+                <div class="meta-item">
+                    <strong>Report Generated</strong>
+                    <span>{{ now if now else 'Now' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="summary-card">
+                <span class="number">{{ summary.high_risk }}</span>
+                <span>HIGH RISK Pairs</span>
+            </div>
+            <div class="summary-card">
+                <span class="number">{{ summary.low_risk }}</span>
+                <span>LOW RISK Pairs</span>
+            </div>
+            <div class="summary-card">
+                <span class="number">{{ summary.sample_match }}</span>
+                <span>Sample Matches</span>
+            </div>
+        </div>
+
+        <!-- Seating Grid Visualization -->
+        {% if flags %}
+        <div class="seating-grid-container">
+            <h2>Seating Arrangement with Flagged Pairs</h2>
+            <div style="text-align: center;">
+                <svg class="seating-grid" width="500" height="350">
+                    <!-- Draw grid cells (6 rows x 10 columns) -->
+                    {% set seat_map = {} %}
+                    {% set high_risk_seats = {} %}
+                    {% set low_risk_seats = {} %}
+                    
+                    <!-- Build seat maps from flags -->
+                    {% for flag in flags %}
+                        {% if flag.risk == 'HIGH_RISK' %}
+                            {% set _ = high_risk_seats.update({flag.seat_a: flag.risk, flag.seat_b: flag.risk}) %}
+                        {% elif flag.risk == 'LOW_RISK' %}
+                            {% set _ = low_risk_seats.update({flag.seat_a: flag.risk, flag.seat_b: flag.risk}) %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% for i in range(6) %}
+                        {% set row = ['A', 'B', 'C', 'D', 'E', 'F'][i] %}
+                        {% for j in range(10) %}
+                            {% set seat = row ~ (j + 1) %}
+                            {% set x = 30 + j * 45 %}
+                            {% set y = 30 + i * 45 %}
+                            {% set seat_map_update = seat_map.update({seat: {'x': x, 'y': y}}) %}
+                            
+                            {% if seat in high_risk_seats %}
+                                <rect x="{{ x }}" y="{{ y }}" width="40" height="40" rx="6" 
+                                      style="fill: #E281B1; stroke: #FF4444; stroke-width: 2; box-shadow: 0 0 8px rgba(255,68,68,0.8);"
+                                      class="flagged-seat high-risk" data-seat="{{ seat }}" />
+                                <text x="{{ x + 20 }}" y="{{ y + 25 }}" text-anchor="middle" 
+                                      font-weight="700" fill="white" font-size="12">
+                                    {{ seat }}
+                                </text>
+                            {% elif seat in low_risk_seats %}
+                                <rect x="{{ x }}" y="{{ y }}" width="40" height="40" rx="6" 
+                                      style="fill: #ffaa00; stroke: #ff8800; stroke-width: 2;"
+                                      class="flagged-seat low-risk" data-seat="{{ seat }}" />
+                                <text x="{{ x + 20 }}" y="{{ y + 25 }}" text-anchor="middle" 
+                                      font-weight="700" fill="#000" font-size="12">
+                                    {{ seat }}
+                                </text>
+                            {% else %}
+                                <rect x="{{ x }}" y="{{ y }}" width="40" height="40" rx="6" />
+                                <text x="{{ x + 20 }}" y="{{ y + 25 }}" text-anchor="middle" font-weight="600">
+                                    {{ seat }}
+                                </text>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </svg>
+            </div>
+            
+            <div class="grid-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #E281B1; border: 2px solid #FF4444;"></div>
+                    <span>HIGH RISK (Similar + Adjacent) - {{ summary.high_risk }} pairs</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffaa00; border: 2px solid #ff8800;"></div>
+                    <span>LOW RISK (Similar + Not Adjacent) - {{ summary.low_risk }} pairs</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Flagged Pairs Table -->
+        <div class="flagged-pairs-container">
+            <h2>Detailed Flagged Pairs</h2>
+            
+            {% if flags %}
+            <table class="risk-table">
+                <thead>
+                    <tr>
+                        <th>Student A</th>
+                        <th>Seat A</th>
+                        <th>Student B</th>
+                        <th>Seat B</th>
+                        <th>Question</th>
+                        <th>Similarity</th>
+                        <th>Risk Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for flag in flags %}
+                    <tr {% if flag.risk == 'HIGH_RISK' %}class="risk-high"{% elif flag.risk == 'LOW_RISK' %}class="risk-low"{% endif %}>
+                        <td>{{ flag.student_a }}</td>
+                        <td><strong>{{ flag.seat_a }}</strong></td>
+                        <td>{{ flag.student_b }}</td>
+                        <td><strong>{{ flag.seat_b }}</strong></td>
+                        <td>Q{{ flag.question }}</td>
+                        <td>
+                            <div class="similarity-bar" style="width: {{ flag.similarity }}%; max-width: 100px;">
+                                <span class="similarity-text">{{ flag.similarity|int }}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="risk-badge {% if flag.risk == 'HIGH_RISK' %}risk-high{% elif flag.risk == 'LOW_RISK' %}risk-low{% endif %}">
+                                {{ flag.risk|replace('_', ' ') }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="no-flags">
+                <span class="emoji">✅</span>
+                <p>No plagiarism detected! All student answers appear to be original.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Export & Navigation -->
+        <div class="export-section">
+            <a href="{{ url_for('export_plagiarism_pdf', exam_id=exam.id) }}" class="btn-export">Export as PDF</a>
+            <a href="{{ url_for('plagiarism_home') }}" class="btn-back">← Back to Plagiarism Detection</a>
+        </div>
+    </div>
+
+    <!-- Parallax & Interactive Effects -->
+    <script>
+        // Parallax scroll effects
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.summary-card, .risk-table');
+            
+            window.addEventListener('scroll', () => {
+                const scrollY = window.scrollY;
+                
+                // Cards subtly shift on scroll
+                cards.forEach((card, i) => {
+                    const speed = i % 2 === 0 ? 0.03 : -0.03;
+                    card.style.transform = `translateY(${scrollY * speed}px)`;
+                });
+
+                // Navbar parallax shrink effect
+                const navbar = document.querySelector('nav, .navbar');
+                if (navbar) {
+                    if (window.scrollY > 50) {
+                        navbar.style.padding = '10px 60px';
+                        navbar.style.backdropFilter = 'blur(20px)';
+                        navbar.style.background = 'rgba(15,10,10,0.95)';
+                    } else {
+                        navbar.style.padding = '20px 60px';
+                        navbar.style.backdropFilter = 'none';
+                        navbar.style.background = '#0f0f0f';
+                    }
+                    navbar.style.transition = 'all 0.3s ease';
+                }
+            });
+        });
+
+        // Card tilt effect on mouse move (mouse parallax)
+        document.querySelectorAll('.summary-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = (y - centerY) / 20;
+                const rotateY = (centerX - x) / 20;
+                card.style.transform = 
+                    `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px)`;
+                card.style.transition = 'transform 0.1s ease';
+                card.style.boxShadow = '0 20px 40px rgba(255,107,107,0.15)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
+                card.style.transition = 'transform 0.5s ease';
+                card.style.boxShadow = '';
+            });
+        });
+
+        // Scroll reveal for sections
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.summary-card, .risk-table').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

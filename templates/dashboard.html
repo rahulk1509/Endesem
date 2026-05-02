@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Performance Dashboard - AI Exam Corrector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <!-- Floating Particles -->
+    <div class="particles">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-left">
+                <h1 class="logo">◈ AI Exam Corrector</h1>
+            </div>
+            <div class="nav-right">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/dashboard" class="nav-link active">📊 Dashboard</a>
+                <a href="/plagiarism" class="nav-link">Plagiarism</a>
+            </div>
+        </div>
+    </nav>
+
+    {% if empty %}
+    <!-- Empty State -->
+    <div class="dashboard-container">
+        <div class="empty-state">
+            <div class="empty-symbol">◎</div>
+            <h2>No exams graded yet</h2>
+            <p>Start by grading an exam on the home page</p>
+            <a href="/" class="btn btn-primary">Go to Home →</a>
+        </div>
+    </div>
+    {% else %}
+    <!-- Dashboard Content -->
+    <div class="dashboard-container">
+        <!-- Section 1: Top Stat Cards -->
+        <div class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-label">Total Students Graded</div>
+                <div class="stat-value">{{ stats.total_students }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Average Score</div>
+                <div class="stat-value coral">{{ stats.average_score }}%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Highest Score</div>
+                <div class="stat-value">{{ stats.highest.score|round|int }}%</div>
+                <div class="stat-subtitle">{{ stats.highest.name }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Lowest Score</div>
+                <div class="stat-value">{{ stats.lowest.score|round|int }}%</div>
+                <div class="stat-subtitle">{{ stats.lowest.name }}</div>
+            </div>
+        </div>
+
+        <!-- Section 2: Score Distribution -->
+        <div class="section">
+            <h2 class="section-title">Score Distribution</h2>
+            <div class="score-distribution">
+                {% set ranges = [('0-40', stats.score_distribution['0-40'], '#FF4444'), 
+                                  ('41-60', stats.score_distribution['41-60'], '#ffaa00'),
+                                  ('61-80', stats.score_distribution['61-80'], '#9B8FFF'),
+                                  ('81-100', stats.score_distribution['81-100'], '#E281B1')] %}
+                {% for label, count, color in ranges %}
+                    {% set total = stats.total_students %}
+                    {% set percentage = (count / total * 100) if total > 0 else 0 %}
+                    <div class="distribution-row">
+                        <div class="dist-label">{{ label }}%</div>
+                        <div class="dist-bar-container">
+                            <div class="dist-bar" style="--bar-width: {{ percentage }}%; --bar-color: {{ color }};" data-percentage="{{ percentage }}"></div>
+                        </div>
+                        <div class="dist-count">{{ count }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Section 3: Hardest vs Easiest Questions -->
+        <div class="questions-container">
+            <div class="question-card hardest">
+                <h3 class="question-title">Hardest Question ⚠</h3>
+                <div class="question-text">{{ stats.hardest_question }}</div>
+                <div class="question-stat hardest-stat">{{ stats.hardest_wrong_pct }}% students got it wrong</div>
+            </div>
+            <div class="question-card easiest">
+                <h3 class="question-title">Easiest Question ✓</h3>
+                <div class="question-text">{{ stats.easiest_question }}</div>
+                <div class="question-stat easiest-stat">{{ stats.easiest_right_pct }}% students got it right</div>
+            </div>
+        </div>
+
+        <!-- Section 4: Per-Subject Performance -->
+        <div class="section">
+            <h2 class="section-title">Subject-wise Averages</h2>
+            <table class="performance-table">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Students</th>
+                        <th>Avg Score</th>
+                        <th>Highest</th>
+                        <th>Lowest</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subject, data in stats.subject_stats.items() %}
+                    <tr class="{% if loop.index % 2 == 0 %}alt-row{% endif %}">
+                        <td>{{ subject or 'General' }}</td>
+                        <td>{{ data.students }}</td>
+                        <td><strong>{{ data.average|round(1) }}%</strong></td>
+                        <td>{{ data.highest|round|int }}%</td>
+                        <td>{{ data.lowest|round|int }}%</td>
+                        <td>
+                            {% if data.average > 75 %}
+                                <span class="status-badge good">Good</span>
+                            {% elif data.average >= 50 %}
+                                <span class="status-badge average">Average</span>
+                            {% else %}
+                                <span class="status-badge attention">Needs Attention</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Section 5: Algorithm Usage -->
+        <div class="section">
+            <h2 class="section-title">AI Algorithm Usage</h2>
+            <div class="algorithm-pills">
+                {% set pill_colors = {
+                    'A* Search': '#E281B1',
+                    'BFS Matching': '#9B8FFF',
+                    'CSP Rubric': '#ffaa00',
+                    'Bayesian': '#4FC3F7',
+                    'Q-Learning': '#4CAF50'
+                } %}
+                {% for algorithm, count in stats.algorithms %}
+                    <div class="algorithm-pill" style="--pill-color: {{ pill_colors.get(algorithm, '#E281B1') }};">
+                        {{ algorithm }}
+                        <span class="pill-count">{{ count }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Section 6: Recent Exams -->
+        <div class="section">
+            <h2 class="section-title">Recent Exams</h2>
+            <div class="recent-exams">
+                {% for exam in stats.recent_exams %}
+                <div class="exam-row">
+                    <div class="exam-info">
+                        <div class="exam-name">{{ exam.name }}</div>
+                        <div class="exam-meta">
+                            <span class="exam-subject">{{ exam.subject }}</span>
+                            <span class="exam-date">{{ exam.date }}</span>
+                        </div>
+                    </div>
+                    <div class="exam-score">{{ exam.avg_score }}%</div>
+                    <div class="exam-algorithm">{{ exam.algorithm }}</div>
+                    <a href="{{ url_for('show_results') }}" class="exam-link">View Results →</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Parallax & Interactive Effects -->
+    <script>
+        // Parallax scroll effects
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.stat-card, .performance-table, .algorithm-pills, .recent-exams');
+            
+            window.addEventListener('scroll', () => {
+                const scrollY = window.scrollY;
+                
+                // Cards subtly shift on scroll
+                cards.forEach((card, i) => {
+                    const speed = i % 2 === 0 ? 0.03 : -0.03;
+                    card.style.transform = `translateY(${scrollY * speed}px)`;
+                });
+
+                // Navbar parallax shrink effect
+                const navbar = document.querySelector('nav, .navbar');
+                if (navbar) {
+                    if (window.scrollY > 50) {
+                        navbar.style.padding = '10px 60px';
+                        navbar.style.backdropFilter = 'blur(20px)';
+                        navbar.style.background = 'rgba(15,10,10,0.95)';
+                    } else {
+                        navbar.style.padding = '20px 60px';
+                        navbar.style.backdropFilter = 'none';
+                        navbar.style.background = '#0f0f0f';
+                    }
+                    navbar.style.transition = 'all 0.3s ease';
+                }
+            });
+        });
+
+        // Card tilt effect on mouse move (mouse parallax)
+        document.querySelectorAll('.stat-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = (y - centerY) / 20;
+                const rotateY = (centerX - x) / 20;
+                card.style.transform = 
+                    `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px)`;
+                card.style.transition = 'transform 0.1s ease';
+                card.style.boxShadow = '0 20px 40px rgba(255,107,107,0.15)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
+                card.style.transition = 'transform 0.5s ease';
+                card.style.boxShadow = '';
+            });
+        });
+
+        // Scroll reveal for sections
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.stat-card, .performance-table, .algorithm-pills, .recent-exams').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+    </script>
+
+</body>
+</html>

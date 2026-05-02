@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Sample Papers - Plagiarism Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .sample-upload-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .upload-form {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #bdc3c7;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .form-group select:focus, .form-group input:focus {
+            outline: none;
+            border-color: #e74c3c;
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+        }
+        .file-group {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        .file-input-wrapper input[type="file"] {
+            padding: 8px;
+            width: 100%;
+        }
+        .add-more-btn {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .add-more-btn:hover {
+            background: #2980b9;
+        }
+        .submit-section {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        .submit-section button {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .submit-btn {
+            background: #27ae60;
+            color: white;
+        }
+        .submit-btn:hover {
+            background: #229954;
+        }
+        .cancel-btn {
+            background: #bdc3c7;
+            color: #333;
+        }
+        .cancel-btn:hover {
+            background: #95a5a6;
+        }
+        .info-box {
+            background: #e8f8e8;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 3px;
+        }
+        .info-box p {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        #uploadStatus {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        #uploadStatus.success {
+            display: block;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        #uploadStatus.error {
+            display: block;
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating Particles -->
+    <div class="particles">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo">📋 AI Exam Corrector</h1>
+            <p class="subtitle">Upload Sample Papers - Plagiarism Detection</p>
+        </div>
+    </nav>
+
+    <div class="sample-upload-container">
+        <h1>Upload Model/Sample Answer Papers</h1>
+        
+        <div class="info-box">
+            <p><strong>ℹ️ Why upload samples?</strong> Sample papers help us distinguish between legitimate matches (where students copy the model answer) and actual plagiarism (where students copy each other).</p>
+        </div>
+
+        <form class="upload-form" id="uploadForm" enctype="multipart/form-data">
+            <!-- Exam Selection -->
+            <div class="form-group">
+                <label>Select Exam *</label>
+                <select id="examId" name="exam_id" required>
+                    <option value="">-- Choose an exam --</option>
+                    {% for exam in exams %}
+                    <option value="{{ exam.id }}">{{ exam.name }} ({{ exam.total_students }} students)</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {% if not exams %}
+            <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #856404;">⚠️ No exams found. Please upload student answer sheets first.</p>
+            </div>
+            {% endif %}
+
+            <!-- Sample Papers -->
+            <div class="form-group">
+                <label>Sample Answer Papers (up to 10) *</label>
+                <div id="fileGroups">
+                    <div class="file-group">
+                        <div class="file-input-wrapper">
+                            <input type="file" name="sample_papers" accept=".pdf,.txt" required>
+                        </div>
+                        <span style="padding: 8px; color: #999;">Model Answer 1</span>
+                    </div>
+                </div>
+                <button type="button" class="add-more-btn" onclick="addFileGroup()">+ Add Another File</button>
+            </div>
+
+            <!-- Submit -->
+            <div class="submit-section">
+                <button type="submit" class="submit-btn" {% if not exams %}disabled{% endif %}>📚 Upload Samples</button>
+                <a href="{{ url_for('plagiarism_home') }}" class="cancel-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">Cancel</a>
+            </div>
+        </form>
+
+        <!-- Status -->
+        <div id="uploadStatus"></div>
+    </div>
+
+    <script>
+        let fileCount = 1;
+        const maxFiles = 10;
+
+        function addFileGroup() {
+            if (fileCount >= maxFiles) {
+                alert('Maximum 10 files allowed');
+                return;
+            }
+            fileCount++;
+            
+            const fileGroups = document.getElementById('fileGroups');
+            const newGroup = document.createElement('div');
+            newGroup.className = 'file-group';
+            newGroup.innerHTML = `
+                <div class="file-input-wrapper">
+                    <input type="file" name="sample_papers" accept=".pdf,.txt" required>
+                </div>
+                <span style="padding: 8px; color: #999;">Model Answer ${fileCount}</span>
+            `;
+            fileGroups.appendChild(newGroup);
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const examId = document.getElementById('examId').value;
+            if (!examId) {
+                alert('Please select an exam');
+                return;
+            }
+            
+            const formData = new FormData(e.target);
+            const statusDiv = document.getElementById('uploadStatus');
+            
+            try {
+                const response = await fetch('{{ url_for("upload_samples") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.className = 'success';
+                    statusDiv.innerHTML = `
+                        <h4>✅ Upload Successful!</h4>
+                        <p>${data.message}</p>
+                        <p><a href="{{ url_for('plagiarism_home') }}">← Back to Plagiarism Detection</a></p>
+                    `;
+                    e.target.reset();
+                } else {
+                    statusDiv.className = 'error';
+                    statusDiv.innerHTML = `<h4>❌ Error</h4><p>${data.error}</p>`;
+                }
+            } catch (error) {
+                statusDiv.className = 'error';
+                statusDiv.innerHTML = `<h4>❌ Upload Failed</h4><p>${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
